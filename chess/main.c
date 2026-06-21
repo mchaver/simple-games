@@ -38,47 +38,6 @@ int are_enemy_teams(piece_and_team *pt1, piece_and_team *pt2) {
   return 0;
 }
 
-void print_piece_and_team(piece_and_team *pt) {  
-  switch (pt->team) {
-  case black:
-    printf("black ");
-    break;
-  case white:
-    printf("white ");
-    break;
-  case no_team:
-    break;    
-  default:
-    break;
-  }
-
-  switch (pt->piece) {
-  case pawn:
-    printf("pawn\n");
-    break;
-  case rook:
-    printf("rook\n");
-    break;
-  case knight:
-    printf("knight\n");
-    break;
-  case bishop:
-    printf("bishop\n");
-    break;
-  case queen:
-    printf("queen\n");
-    break;
-  case king:
-    printf("king\n");
-    break;
-  case empty:
-    printf("empty\n");
-    break;            
-  default:
-    break;
-  }  
-}
-
 typedef struct _board {
   team turn;
   piece_and_team placement[8][8]; // start in upper left corner
@@ -179,10 +138,60 @@ char* position_to_code(position *p) {
   return code;
 }
 
+void print_piece_and_team(piece_and_team *pt, int row, int col) {  
+  switch (pt->team) {
+  case black:
+    printf("black ");
+    break;
+  case white:
+    printf("white ");
+    break;
+  case no_team:
+    break;    
+  default:
+    break;
+  }
+
+  switch (pt->piece) {
+  case pawn:
+    printf("pawn");
+    break;
+  case rook:
+    printf("rook");
+    break;
+  case knight:
+    printf("knight");
+    break;
+  case bishop:
+    printf("bishop");
+    break;
+  case queen:
+    printf("queen");
+    break;
+  case king:
+    printf("king");
+    break;
+  case empty:
+    printf("empty");
+    break;            
+  default:
+    break;
+  }
+
+  position p;
+  p.col = col;
+  p.row = row;
+  char* code = position_to_code(&p);
+  printf(" at %s row: %d, col: %d\n", code, p.row, p.col);
+  free(code);
+}
+
+
 void print_moves(moves* moves) {
   int i;
+  char* code;
   for (i = 0; i < moves->size; i++) {
-    char* code = position_to_code(&moves->positions[i]);
+    code = position_to_code(&moves->positions[i]);
     printf("Can move to %s row: %d, col: %d\n", code, moves->positions[i].row, moves->positions[i].col);
     free(code);
   }
@@ -262,6 +271,28 @@ board rook_test_board = {
   }
 };
 
+board bishop_test_board = {
+  .turn = black,
+  .placement = {
+    {  empty_space, empty_space, empty_space, empty_space, empty_space, empty_space, empty_space, empty_space
+    },
+    {  empty_space, white_pawn, empty_space, empty_space, empty_space, empty_space, empty_space, empty_space
+    },
+    {  empty_space, empty_space, empty_space, empty_space, empty_space, empty_space, empty_space, empty_space
+    },
+    {  empty_space, empty_space, black_bishop, empty_space, empty_space, empty_space, empty_space, empty_space
+    },
+    {  empty_space, empty_space, empty_space, empty_space, empty_space, empty_space, empty_space, empty_space
+    },
+    {  white_rook, empty_space, empty_space, empty_space, empty_space, empty_space, empty_space, empty_space
+    },
+    {  empty_space, white_pawn, empty_space, empty_space, empty_space, black_queen, empty_space, empty_space
+    },
+    {  empty_space, empty_space, empty_space, empty_space, empty_space, empty_space, empty_space, empty_space
+    },    
+  }
+};
+
 // pawn, on first move can advance forward one or two spaces
 // captures forward,diagonally by one space
 // en passant, enemy pawn moves two spaces forward, lands beside your pawn, you move diagonally and capture it
@@ -275,15 +306,22 @@ void can_move(board *board, int row, int col) {
   // collect valid moves
   
   if (row < 0 || row > 7 || col < 0 || col > 7 ) {
+    printf("position does not exist\n");
     return; // position does not exist
   }
 
   piece_and_team *p = &board->placement[row][col];
   if (p->piece == empty) {
+    printf("there is no piece there\n");
     return;
   }
+
+  print_piece_and_team(p, row, col);
   
-  print_piece_and_team(p);
+  if (p->team != board->turn) {
+    printf("It is not that team's turn, you cannot move that piece\n");
+    return;
+  }
   
   if (p->piece == pawn) {
     // get start_row and direction for either team
@@ -388,6 +426,75 @@ void can_move(board *board, int row, int col) {
         break;
       }
     }    
+  } else if (p->piece == bishop) {
+    int row_cursor = row + 1;
+    int col_cursor = col + 1;
+    
+    // up and right movement
+    while (row_cursor < 8 && col_cursor < 8) {
+      if (board->placement[row_cursor][col_cursor].piece == empty) {
+        add_move(moves, row_cursor, col_cursor);
+        row_cursor++;
+        col_cursor++;
+      } else if (are_enemy_teams(&board->placement[row_cursor][col_cursor], p)) {
+        add_move(moves, row_cursor, col_cursor);
+        break;
+      } else {
+        // same team, can't make this move
+        break;
+      }
+    }
+
+    // up and left movement    
+    row_cursor = row + 1;
+    col_cursor = col - 1;
+    while (row_cursor < 8 && col_cursor > -1) {
+      if (board->placement[row_cursor][col_cursor].piece == empty) {
+        add_move(moves, row_cursor, col_cursor);
+        row_cursor++;
+        col_cursor--;
+      } else if (are_enemy_teams(&board->placement[row_cursor][col_cursor], p)) {
+        add_move(moves, row_cursor, col_cursor);
+        break;
+      } else {
+        // same team, can't make this move
+        break;
+      }
+    }
+
+    // down and right movement    
+    row_cursor = row - 1;
+    col_cursor = col + 1;
+    while (row_cursor > -1 && col_cursor < 8) {
+      if (board->placement[row_cursor][col_cursor].piece == empty) {
+        add_move(moves, row_cursor, col_cursor);
+        row_cursor--;
+        col_cursor++;
+      } else if (are_enemy_teams(&board->placement[row_cursor][col_cursor], p)) {
+        add_move(moves, row_cursor, col_cursor);
+        break;
+      } else {
+        // same team, can't make this move
+        break;
+      }
+    }
+
+    // down and left movement    
+    row_cursor = row - 1;
+    col_cursor = col - 1;
+    while (row_cursor > -1 && col_cursor > -1) {
+      if (board->placement[row_cursor][col_cursor].piece == empty) {
+        add_move(moves, row_cursor, col_cursor);
+        row_cursor--;
+        col_cursor--;
+      } else if (are_enemy_teams(&board->placement[row_cursor][col_cursor], p)) {
+        add_move(moves, row_cursor, col_cursor);
+        break;
+      } else {
+        // same team, can't make this move
+        break;
+      }
+    }
   }
 
   print_moves(moves);
@@ -398,10 +505,14 @@ int main() {
   // print_piece_and_team(&initial_board.placement[0][0]);
   // print_piece_and_team(&initial_board.placement[0][6]);
   // print_piece_and_team(&initial_board.placement[6][0]);
-  
+
+  // pawn tests
   can_move(&initial_board, 6, 0);
+  initial_board.turn = black;
   can_move(&initial_board, 1, 1);
-  can_move(&rook_test_board, 4, 1);
   
+  can_move(&rook_test_board, 4, 1);
+  can_move(&bishop_test_board, 3, 2);
+
   return 0;
 }

@@ -1,3 +1,4 @@
+#include <locale.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -30,14 +31,6 @@ typedef struct _piece_and_team {
   piece piece;
 } piece_and_team;
 
-int are_enemy_teams(piece_and_team *pt1, piece_and_team *pt2) {
-  if ((pt1->team == white && pt2->team == black) ||
-      (pt1->team == black && pt2->team == white)) {
-    return 1;
-  }
-  return 0;
-}
-
 typedef struct _board {
   team turn;
   piece_and_team placement[8][8]; // start in upper left corner
@@ -48,20 +41,18 @@ typedef struct _position {
   int row; // 0-7, 8-1 on chessboard
 } position;
 
-// typedef struct _move {
-//   struct _move* next_move;
-//   int x;
-//   int y;
-// } move;
-
-// typedef struct _moves {
-//   move *move;
-// } moves;
-
 typedef struct _moves {
   position *positions;
   int size;
 } moves;
+
+int are_enemy_teams(piece_and_team *pt1, piece_and_team *pt2) {
+  if ((pt1->team == white && pt2->team == black) ||
+      (pt1->team == black && pt2->team == white)) {
+    return 1;
+  }
+  return 0;
+}
 
 void add_move(moves* moves, int row, int col) {
   moves->size++;
@@ -186,6 +177,70 @@ void print_piece_and_team(piece_and_team *pt, int row, int col) {
   free(code);
 }
 
+const char* piece_and_team_to_unicode(piece_and_team *pt) {  
+  switch (pt->team) {
+  case black: {
+    switch (pt->piece) {
+    case pawn:
+      return "♟";
+    case rook:
+      return "♜";
+    case knight:
+      return "♞";
+    case bishop:
+      return "♝";
+    case queen:
+      return "♛";
+    case king:
+      return "♚";
+    case empty:
+      return " ";
+    default:
+      return "";
+    }
+  }
+    
+  case white: {
+    switch (pt->piece) {
+    case pawn:
+      return "♙";
+    case rook:
+      return "♖";
+    case knight:
+      return "♘";
+    case bishop:
+      return "♗";
+    case queen:
+      return "♕";
+    case king:
+      return "♔";
+    case empty:
+      return " ";
+    default:
+      return "";
+    }
+  }
+  default:
+    return "";
+  }
+}
+
+void print_board(board* board) {
+  int row;
+  int col;
+  for (row = 0; row < 8; row++) {
+    printf("%d", 8-row);
+    for (col = 0; col < 8; col++) {
+      printf(" %s", piece_and_team_to_unicode(&board->placement[row][col]));
+    }
+    printf("\n");
+  }
+  printf("  a b c d e f g h\n");
+
+  // &board->placement[row][col]
+  
+}
+
 
 void print_moves(moves* moves) {
   int i;
@@ -230,7 +285,7 @@ const piece_and_team white_queen = {.team = white, .piece = queen};
 board initial_board = {
   .turn = white,
   .placement = {
-    {  black_rook, black_knight, black_bishop, black_king, black_queen, black_bishop, black_knight, black_rook
+    {  black_rook, black_knight, black_bishop, black_queen, black_king, black_bishop, black_knight, black_rook
     },
     {  black_pawn, black_pawn, black_pawn, black_pawn, black_pawn, black_pawn, black_pawn, black_pawn
     },
@@ -244,7 +299,7 @@ board initial_board = {
     },
     {  white_pawn, white_pawn, white_pawn, white_pawn, white_pawn, white_pawn, white_pawn, white_pawn
     },
-    {  white_rook, white_knight, white_bishop, white_king, white_queen, white_bishop, white_knight, white_rook
+    {  white_rook, white_knight, white_bishop, white_queen, white_king, white_bishop, white_knight, white_rook
     },    
   }
 };
@@ -336,6 +391,29 @@ board queen_test_board = {
     },    
   }
 };
+
+board king_test_board = {
+  .turn = white,
+  .placement = {
+    {  empty_space, empty_space, empty_space, empty_space, empty_space, empty_space, empty_space, empty_space
+    },
+    {  empty_space, white_pawn, black_rook, empty_space, empty_space, empty_space, empty_space, empty_space
+    },
+    {  empty_space, empty_space, empty_space, empty_space, empty_space, black_queen, empty_space, empty_space
+    },
+    {  empty_space, empty_space, black_pawn, black_knight, white_pawn, empty_space, empty_space, empty_space
+    },
+    {  empty_space, white_pawn, empty_space, white_king, empty_space, empty_space, empty_space, empty_space
+    },
+    {  white_rook, empty_space, white_pawn, empty_space, black_pawn, empty_space, empty_space, empty_space
+    },
+    {  empty_space, white_pawn, empty_space, empty_space, empty_space, black_queen, empty_space, empty_space
+    },
+    {  empty_space, empty_space, empty_space, empty_space, empty_space, empty_space, empty_space, empty_space
+    },    
+  }
+};
+
 
 // pawn, on first move can advance forward one or two spaces
 // captures forward,diagonally by one space
@@ -472,7 +550,7 @@ void can_move(board *board, int row, int col) {
         (board->placement[row_cursor][col_cursor].piece == empty ||
          are_enemy_teams(&board->placement[row_cursor][col_cursor], p)))
       add_move(moves, row_cursor, col_cursor);    
-  } else if (p->piece == rook || p->piece == queen) {
+  } else if (p->piece == rook || p->piece == queen || p->piece == king) {
     int cursor = row + 1;
     // up moves
     while (cursor < 8) {
@@ -486,6 +564,7 @@ void can_move(board *board, int row, int col) {
         // same team, can't make this move
         break;
       }
+      if (p->piece == king) break; // king only moves once in a direction
     }
     cursor = row - 1;
     // down moves
@@ -500,6 +579,7 @@ void can_move(board *board, int row, int col) {
         // same team, can't make this move
         break;
       }
+      if (p->piece == king) break; // king only moves once in a direction      
     }  
     // left moves
     cursor = col - 1;
@@ -514,6 +594,7 @@ void can_move(board *board, int row, int col) {
         // same team, can't make this move
         break;
       }
+      if (p->piece == king) break; // king only moves once in a direction      
     }
     // right moves
     cursor = col + 1;
@@ -528,10 +609,11 @@ void can_move(board *board, int row, int col) {
         // same team, can't make this move
         break;
       }
+      if (p->piece == king) break; // king only moves once in a direction      
     }    
   }
 
-  if (p->piece == bishop || p->piece == queen) {
+  if (p->piece == bishop || p->piece == queen || p->piece == king) {
     int row_cursor = row + 1;
     int col_cursor = col + 1;
     
@@ -548,6 +630,7 @@ void can_move(board *board, int row, int col) {
         // same team, can't make this move
         break;
       }
+      if (p->piece == king) break; // king only moves once in a direction
     }
 
     // up and left movement    
@@ -565,6 +648,7 @@ void can_move(board *board, int row, int col) {
         // same team, can't make this move
         break;
       }
+      if (p->piece == king) break; // king only moves once in a direction
     }
 
     // down and right movement    
@@ -582,6 +666,7 @@ void can_move(board *board, int row, int col) {
         // same team, can't make this move
         break;
       }
+      if (p->piece == king) break; // king only moves once in a direction
     }
 
     // down and left movement    
@@ -599,6 +684,7 @@ void can_move(board *board, int row, int col) {
         // same team, can't make this move
         break;
       }
+      if (p->piece == king) break; // king only moves once in a direction
     }
   }
 
@@ -607,6 +693,7 @@ void can_move(board *board, int row, int col) {
 }
 
 int main() {
+  setlocale(LC_ALL, ""); // Essential for correct UTF-8 rendering  
   // print_piece_and_team(&initial_board.placement[0][0]);
   // print_piece_and_team(&initial_board.placement[0][6]);
   // print_piece_and_team(&initial_board.placement[6][0]);
@@ -621,6 +708,10 @@ int main() {
   can_move(&knight_test_board, 3, 3);
 
   can_move(&queen_test_board, 4, 3);
-  
+
+  can_move(&king_test_board, 4, 3);
+
+  print_board(&initial_board);
+    
   return 0;
 }

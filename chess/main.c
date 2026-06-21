@@ -315,6 +315,28 @@ board knight_test_board = {
   }
 };
 
+board queen_test_board = {
+  .turn = white,
+  .placement = {
+    {  empty_space, empty_space, empty_space, empty_space, empty_space, empty_space, empty_space, empty_space
+    },
+    {  empty_space, white_pawn, black_rook, empty_space, empty_space, empty_space, empty_space, empty_space
+    },
+    {  empty_space, empty_space, empty_space, empty_space, empty_space, black_queen, empty_space, empty_space
+    },
+    {  empty_space, empty_space, empty_space, black_knight, empty_space, empty_space, empty_space, empty_space
+    },
+    {  empty_space, white_pawn, empty_space, white_queen, empty_space, empty_space, empty_space, empty_space
+    },
+    {  white_rook, empty_space, white_pawn, empty_space, black_pawn, empty_space, empty_space, empty_space
+    },
+    {  empty_space, white_pawn, empty_space, empty_space, empty_space, black_queen, empty_space, empty_space
+    },
+    {  empty_space, empty_space, empty_space, empty_space, empty_space, empty_space, empty_space, empty_space
+    },    
+  }
+};
+
 // pawn, on first move can advance forward one or two spaces
 // captures forward,diagonally by one space
 // en passant, enemy pawn moves two spaces forward, lands beside your pawn, you move diagonally and capture it
@@ -391,7 +413,66 @@ void can_move(board *board, int row, int col) {
         add_move(moves, next_row, col+1);
       }        
     }
-  } else if (p->piece == rook) {
+  } else if (p->piece == knight) {
+    // up Ls
+    int row_cursor = row + 2;
+    int col_cursor = col + 1;
+
+    if (row_cursor < 8 && col_cursor < 8 &&
+        (board->placement[row_cursor][col_cursor].piece == empty ||
+         are_enemy_teams(&board->placement[row_cursor][col_cursor], p)))
+      add_move(moves, row_cursor, col_cursor);
+
+    row_cursor = row + 1;
+    col_cursor = col + 2;
+    if (row_cursor < 8 && col_cursor < 8 &&
+        (board->placement[row_cursor][col_cursor].piece == empty ||
+         are_enemy_teams(&board->placement[row_cursor][col_cursor], p)))        
+      add_move(moves, row_cursor, col_cursor);
+
+    row_cursor = row + 2;
+    col_cursor = col - 1;
+    if (row_cursor < 8 && col_cursor > -1 &&
+        (board->placement[row_cursor][col_cursor].piece == empty ||
+         are_enemy_teams(&board->placement[row_cursor][col_cursor], p)))        
+      add_move(moves, row_cursor, col_cursor);
+
+    row_cursor = row + 1;
+    col_cursor = col - 2;
+    if (row_cursor < 8 && col_cursor > -1 &&
+        (board->placement[row_cursor][col_cursor].piece == empty ||
+         are_enemy_teams(&board->placement[row_cursor][col_cursor], p)))
+      add_move(moves, row_cursor, col_cursor);
+    
+    // down Ls
+    row_cursor = row - 2;
+    col_cursor = col + 1;
+    if (row_cursor > -1 && col_cursor < 8 &&
+        (board->placement[row_cursor][col_cursor].piece == empty ||
+         are_enemy_teams(&board->placement[row_cursor][col_cursor], p)))
+      add_move(moves, row_cursor, col_cursor);
+
+    row_cursor = row - 1;
+    col_cursor = col + 2;
+    if (row_cursor > -1 && col_cursor < 8 &&
+        (board->placement[row_cursor][col_cursor].piece == empty ||
+         are_enemy_teams(&board->placement[row_cursor][col_cursor], p)))        
+      add_move(moves, row_cursor, col_cursor);
+
+    row_cursor = row - 2;
+    col_cursor = col - 1;
+    if (row_cursor > -1 && col_cursor > -1 &&
+        (board->placement[row_cursor][col_cursor].piece == empty ||
+         are_enemy_teams(&board->placement[row_cursor][col_cursor], p)))        
+      add_move(moves, row_cursor, col_cursor);
+
+    row_cursor = row - 1;
+    col_cursor = col - 2;
+    if (row_cursor > -1 && col_cursor > -1 &&
+        (board->placement[row_cursor][col_cursor].piece == empty ||
+         are_enemy_teams(&board->placement[row_cursor][col_cursor], p)))
+      add_move(moves, row_cursor, col_cursor);    
+  } else if (p->piece == rook || p->piece == queen) {
     int cursor = row + 1;
     // up moves
     while (cursor < 8) {
@@ -448,7 +529,9 @@ void can_move(board *board, int row, int col) {
         break;
       }
     }    
-  } else if (p->piece == bishop) {
+  }
+
+  if (p->piece == bishop || p->piece == queen) {
     int row_cursor = row + 1;
     int col_cursor = col + 1;
     
@@ -517,65 +600,6 @@ void can_move(board *board, int row, int col) {
         break;
       }
     }
-  } else if (p->piece == knight) {
-    // up Ls
-    int row_cursor = row + 2;
-    int col_cursor = col + 1;
-
-    if (row_cursor < 8 && col_cursor < 8 &&
-        (board->placement[row_cursor][col_cursor].piece == empty ||
-         are_enemy_teams(&board->placement[row_cursor][col_cursor], p)))
-      add_move(moves, row_cursor, col_cursor);
-
-    row_cursor = row + 1;
-    col_cursor = col + 2;
-    if (row_cursor < 8 && col_cursor < 8 &&
-        (board->placement[row_cursor][col_cursor].piece == empty ||
-         are_enemy_teams(&board->placement[row_cursor][col_cursor], p)))        
-      add_move(moves, row_cursor, col_cursor);
-
-    row_cursor = row + 2;
-    col_cursor = col - 1;
-    if (row_cursor < 8 && col_cursor > -1 &&
-        (board->placement[row_cursor][col_cursor].piece == empty ||
-         are_enemy_teams(&board->placement[row_cursor][col_cursor], p)))        
-      add_move(moves, row_cursor, col_cursor);
-
-    row_cursor = row + 1;
-    col_cursor = col - 2;
-    if (row_cursor < 8 && col_cursor > -1 &&
-        (board->placement[row_cursor][col_cursor].piece == empty ||
-         are_enemy_teams(&board->placement[row_cursor][col_cursor], p)))
-      add_move(moves, row_cursor, col_cursor);
-    
-    // down Ls
-    row_cursor = row - 2;
-    col_cursor = col + 1;
-    if (row_cursor > -1 && col_cursor < 8 &&
-        (board->placement[row_cursor][col_cursor].piece == empty ||
-         are_enemy_teams(&board->placement[row_cursor][col_cursor], p)))
-      add_move(moves, row_cursor, col_cursor);
-
-    row_cursor = row - 1;
-    col_cursor = col + 2;
-    if (row_cursor > -1 && col_cursor < 8 &&
-        (board->placement[row_cursor][col_cursor].piece == empty ||
-         are_enemy_teams(&board->placement[row_cursor][col_cursor], p)))        
-      add_move(moves, row_cursor, col_cursor);
-
-    row_cursor = row - 2;
-    col_cursor = col - 1;
-    if (row_cursor > -1 && col_cursor > -1 &&
-        (board->placement[row_cursor][col_cursor].piece == empty ||
-         are_enemy_teams(&board->placement[row_cursor][col_cursor], p)))        
-      add_move(moves, row_cursor, col_cursor);
-
-    row_cursor = row - 1;
-    col_cursor = col - 2;
-    if (row_cursor > -1 && col_cursor > -1 &&
-        (board->placement[row_cursor][col_cursor].piece == empty ||
-         are_enemy_teams(&board->placement[row_cursor][col_cursor], p)))
-      add_move(moves, row_cursor, col_cursor);    
   }
 
   print_moves(moves);
@@ -596,5 +620,7 @@ int main() {
   can_move(&bishop_test_board, 3, 2);
   can_move(&knight_test_board, 3, 3);
 
+  can_move(&queen_test_board, 4, 3);
+  
   return 0;
 }

@@ -65,6 +65,33 @@ void add_move(moves* moves, int row, int col) {
   moves->positions[moves->size-1].col = col;
 };
 
+int code_to_col(char code) {
+  switch (code) {
+  case 'a':
+    return 0;
+  case 'b':
+    return 1;
+  case 'c':
+    return 2;
+  case 'd':
+    return 3;
+  case 'e':
+    return 4;
+  case 'f':
+    return 5;
+  case 'g':
+    return 6;
+  case 'h':
+    return 7;    
+  default:
+    return -1;
+  }
+}
+
+int code_to_row(int row) {
+  return 8 - row;
+}
+
 char* position_to_code(position *p) {
   char* code = malloc(2 * sizeof(char));
 
@@ -235,12 +262,8 @@ void print_board(board* board) {
     }
     printf("\n");
   }
-  printf("  a b c d e f g h\n");
-
-  // &board->placement[row][col]
-  
+  printf("  a b c d e f g h\n");  
 }
-
 
 void print_moves(moves* moves) {
   int i;
@@ -253,18 +276,9 @@ void print_moves(moves* moves) {
 };
 
 void free_moves(moves* moves) {
-  // int i;
-  // for (i = 0; i < moves->size; i++) {
-  //   free(&moves->positions[i]);
-  // }
   free(moves->positions);
   free(moves);
 }
-
-// typedef struct _moves {
-//   int count; // total number of moves
-//   int* position;
-// } moves;
 
 const piece_and_team empty_space = {.team = no_team, .piece = empty};
 
@@ -414,7 +428,6 @@ board king_test_board = {
   }
 };
 
-
 // pawn, on first move can advance forward one or two spaces
 // captures forward,diagonally by one space
 // en passant, enemy pawn moves two spaces forward, lands beside your pawn, you move diagonally and capture it
@@ -422,27 +435,23 @@ board king_test_board = {
 const int BLACK_PAWN_START_ROW = 1;
 const int WHITE_PAWN_START_ROW = 6;
 
-// column, row
-void can_move(board *board, int row, int col) {
-  moves *moves = malloc(sizeof(moves));
-  // collect valid moves
-  
+int can_move(board *board, int row, int col, moves *moves) {  
   if (row < 0 || row > 7 || col < 0 || col > 7 ) {
     printf("position does not exist\n");
-    return; // position does not exist
+    return -1; 
   }
 
   piece_and_team *p = &board->placement[row][col];
   if (p->piece == empty) {
     printf("there is no piece there\n");
-    return;
+    return -2;
   }
 
   print_piece_and_team(p, row, col);
   
   if (p->team != board->turn) {
     printf("It is not that team's turn, you cannot move that piece\n");
-    return;
+    return -3;
   }
   
   if (p->piece == pawn) {
@@ -688,9 +697,89 @@ void can_move(board *board, int row, int col) {
     }
   }
 
-  print_moves(moves);
-  free_moves(moves);  
+  return 0;
+  // print_moves(moves);
+  // free_moves(moves);  
 }
+
+int move_piece(board* board, int source_row, int source_col, int dest_row, int dest_col) {
+  moves *moves = malloc(sizeof(moves));
+  moves->size = 0;
+  int error = can_move(board, source_row, source_col, moves);
+
+  if (error == 0) {
+    int moved = 0;
+    int i;
+    for (i = 0; i < moves->size; i++) {
+      if (moves->positions[i].col == dest_col && moves->positions[i].row == dest_row) {
+        board->placement[dest_row][dest_col] = board->placement[source_row][source_col];
+        board->placement[source_row][source_col] = empty_space;
+        if (board->turn == black) {
+          board->turn = white;
+        } else {
+          board->turn = black;
+        }
+        moved = 1;
+        break;
+      }
+      if (!moved) {
+        printf("move_piece failed, source not a viable move\n");
+      }
+    }
+  } else {
+    printf("move_piece failed\n");
+  }
+  
+  free_moves(moves);
+  // get legal moves
+  // if illegal, return error
+  // if legal, [dest_row][dest_col] = [source_row][source_col]
+  // [source_row][source_col] = empty
+  // update turn
+  return 1;
+}
+
+void game_loop() {
+  char command[100];
+  int game_complete = 0;
+  board board = initial_board;
+  
+  char origin_col_input;
+  int origin_row_input;
+  int origin_col;
+  int origin_row;
+  
+  char destination_col_input;
+  int destination_row_input;
+  int destination_col;
+  int destination_row;
+  
+  while (!game_complete) {
+    print_board(&board);
+
+    if (board.turn == black) {
+      printf("Black team's turn\n");
+    } else {
+      printf("White team's turn\n");
+    }
+    
+    printf("Enter your next command (eg. b2-b4)\n");
+    
+    fgets(command, sizeof(command), stdin);
+    if (sscanf(command, "%c%d-%c%d", &origin_col_input, &origin_row_input, &destination_col_input, &destination_row_input)) {
+      origin_col = code_to_col(origin_col_input);
+      origin_row = code_to_row(origin_row_input);
+
+      destination_col = code_to_col(destination_col_input);
+      destination_row = code_to_row(destination_row_input);
+      
+      move_piece(&board, origin_row, origin_col, destination_row, destination_col);
+    } else {
+      printf("Invalid command\n");
+    }
+  }
+}
+
 
 int main() {
   setlocale(LC_ALL, ""); // Essential for correct UTF-8 rendering  
@@ -699,19 +788,21 @@ int main() {
   // print_piece_and_team(&initial_board.placement[6][0]);
 
   // pawn tests
-  can_move(&initial_board, 6, 0);
-  initial_board.turn = black;
-  can_move(&initial_board, 1, 1);
   
-  can_move(&rook_test_board, 4, 1);
-  can_move(&bishop_test_board, 3, 2);
-  can_move(&knight_test_board, 3, 3);
+  // can_move(&initial_board, 6, 0);
+  // initial_board.turn = black;
+  // can_move(&initial_board, 1, 1);
+  
+  // can_move(&rook_test_board, 4, 1);
+  // can_move(&bishop_test_board, 3, 2);
+  // can_move(&knight_test_board, 3, 3);
 
-  can_move(&queen_test_board, 4, 3);
+  // can_move(&queen_test_board, 4, 3);
 
-  can_move(&king_test_board, 4, 3);
+  // can_move(&king_test_board, 4, 3);
 
-  print_board(&initial_board);
-    
+  // print_board(&initial_board);
+  game_loop();
+  
   return 0;
 }

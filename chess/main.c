@@ -309,6 +309,63 @@ void can_move(board *board, int row, int col) {
         add_move(moves, next_row, col+1);
       }        
     }
+  } else if (p->piece == rook) {
+    int cursor = row + 1;
+    // up moves
+    while (cursor < 8) {
+      if (board->placement[cursor][col].piece == empty) {
+        add_move(moves, cursor, col);
+        cursor++;
+      } else if (are_enemy_teams(&board->placement[cursor][col], p)) {
+        add_move(moves, cursor, col);
+        break;
+      } else {
+        // same team, can't make this move
+        break;
+      }
+    }
+    cursor = row - 1;
+    // down moves
+    while (cursor > -1) {
+      if (board->placement[cursor][col].piece == empty) {
+        add_move(moves, cursor, col);
+        cursor--;
+      } else if (are_enemy_teams(&board->placement[cursor][col], p)) {
+        add_move(moves, cursor, col);
+        break;
+      } else {
+        // same team, can't make this move
+        break;
+      }
+    }  
+    // left moves
+    cursor = col - 1;
+    while (cursor > -1) {
+      if (board->placement[row][cursor].piece == empty) {
+        add_move(moves, row, cursor);
+        cursor--;
+      } else if (are_enemy_teams(&board->placement[row][cursor], p)) {
+        add_move(moves, row, cursor);
+        break;
+      } else {
+        // same team, can't make this move
+        break;
+      }
+    }
+    // right moves
+    cursor = col + 1;
+    while (cursor < 8) {
+      if (board->placement[row][cursor].piece == empty) {
+        add_move(moves, row, cursor);
+        cursor++;
+      } else if (are_enemy_teams(&board->placement[row][cursor], p)) {
+        add_move(moves, row, cursor);
+        break;
+      } else {
+        // same team, can't make this move
+        break;
+      }
+    }    
   }
 
   print_moves(moves);

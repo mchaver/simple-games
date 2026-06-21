@@ -306,15 +306,22 @@ void can_move(board *board, int row, int col) {
   // collect valid moves
   
   if (row < 0 || row > 7 || col < 0 || col > 7 ) {
+    printf("position does not exist\n");
     return; // position does not exist
   }
 
   piece_and_team *p = &board->placement[row][col];
   if (p->piece == empty) {
+    printf("there is no piece there\n");
     return;
   }
-  
+
   print_piece_and_team(p, row, col);
+  
+  if (p->team != board->turn) {
+    printf("It is not that team's turn, you cannot move that piece\n");
+    return;
+  }
   
   if (p->piece == pawn) {
     // get start_row and direction for either team
@@ -498,9 +505,12 @@ int main() {
   // print_piece_and_team(&initial_board.placement[0][0]);
   // print_piece_and_team(&initial_board.placement[0][6]);
   // print_piece_and_team(&initial_board.placement[6][0]);
-  
+
+  // pawn tests
   can_move(&initial_board, 6, 0);
+  initial_board.turn = black;
   can_move(&initial_board, 1, 1);
+  
   can_move(&rook_test_board, 4, 1);
   can_move(&bishop_test_board, 3, 2);
 

@@ -30,8 +30,15 @@ typedef struct _piece_and_team {
   piece piece;
 } piece_and_team;
 
-void print_piece_and_team(piece_and_team *pt) {
-  
+int are_enemy_teams(piece_and_team *pt1, piece_and_team *pt2) {
+  if ((pt1->team == white && pt2->team == black) ||
+      (pt1->team == black && pt2->team == white)) {
+    return 1;
+  }
+  return 0;
+}
+
+void print_piece_and_team(piece_and_team *pt) {  
   switch (pt->team) {
   case black:
     printf("black ");
@@ -237,6 +244,9 @@ board initial_board = {
 // captures forward,diagonally by one space
 // en passant, enemy pawn moves two spaces forward, lands beside your pawn, you move diagonally and capture it
 
+const int BLACK_PAWN_START_ROW = 1;
+const int WHITE_PAWN_START_ROW = 6;
+
 // column, row
 void can_move(board *board, int row, int col) {
   moves *moves = malloc(sizeof(moves));
@@ -250,75 +260,59 @@ void can_move(board *board, int row, int col) {
   if (p->piece == empty) {
     return;
   }
+  
   print_piece_and_team(p);
+  
   if (p->piece == pawn) {
+    // get start_row and direction for either team
+    int start_row = 0;
+    int direction = 0;
     if (p->team == white) {
-      if (row == 6) {
-        // it is on the beginning row
-        if (board->placement[5][col].piece == empty) {
-          if (board->placement[4][col].piece == empty) {
-            // can move two spaces forward
-            add_move(moves, 4, col);
-          }
-          // can move forward one space
-          add_move(moves, 5, col);
-        }
-      } else {
-        if (row > 0 && board->placement[row-1][col].piece == empty) {
-          // can move one space forward
-          add_move(moves, row-1, col);
-        }
-      }
-      // check if can capture
-      if (row > 0) {
-        // check left capture
-        if (col > 0 && board->placement[row-1][col-1].team == black) {
-          // can left capture
-          add_move(moves, row-1, col-1);
-        }
-
-        // check right capture
-        if (row < 7 && board->placement[row-1][col+1].team == black) {
-          // can left capture
-          add_move(moves, row-1, col+1);
-        }        
-      }
-    } else {
-      // black pawn
-      if (row == 1) {
-        // it is on the beginning row
-        if (board->placement[2][col].piece == empty) {
-          if (board->placement[3][col].piece == empty) {
-            // can move two spaces forward
-            add_move(moves, 3, col);
-          }
-          // can move one space forward
-          add_move(moves, 2, col);
-        }
-      } else {
-        if (row < 7 && board->placement[row+1][col].piece == empty) {
-          // can move one space forward
-          add_move(moves, row+1, col);
-        }
-      }
-      // check if can capture
-      if (row < 7 ) {
-        // check left capture
-        if (col > 0 && board->placement[row+1][col-1].team == white) {
-          // can left capture
-          add_move(moves, row+1, col-1);
-        }
-
-        // check right capture
-        if (col < 7 && board->placement[row+1][col+1].team == white) {
-          // can right capture
-          add_move(moves, row+1, col+1);
-        }        
-      }      
+      direction = -1;
+      if (row == WHITE_PAWN_START_ROW) start_row = WHITE_PAWN_START_ROW;
+    } else if (p->team == black) {
+      direction = 1;
+      if (row == BLACK_PAWN_START_ROW) start_row = BLACK_PAWN_START_ROW;
     }
-    print_moves(moves);
-    free_moves(moves);
+
+    // the pawn is on the start_row, see if it can move two spaces
+    int next_row = start_row + direction;
+    
+    if (start_row != 0) {
+      int next_next_row = start_row + direction + direction;
+      if (board->placement[next_row][col].piece == empty) {
+        if (board->placement[next_next_row][col].piece == empty) {
+          // can move two spaces forward
+          add_move(moves, next_next_row, col);
+        }
+
+      }
+    }
+
+    // see if it can move one space
+    if (row > 0 && row < 7 && board->placement[next_row][col].piece == empty) {
+      // can move forward one space
+      add_move(moves, next_row, col);
+    }
+
+    // check if the pawn can capture
+    if (row > 0 && row < 7) {
+      // check left capture
+      if (col > 0 && are_enemy_teams(&board->placement[next_row][col-1], p)) {
+        // can left capture
+        add_move(moves, next_row, col-1);
+      }
+
+      // check right capture
+      if (row > 0 && row < 7 && are_enemy_teams(&board->placement[next_row][col+1], p)) {
+        // can left capture
+        add_move(moves, next_row, col+1);
+      }        
+    }
   }
+
+  print_moves(moves);
+  free_moves(moves);  
 }
 
 int main() {

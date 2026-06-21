@@ -240,6 +240,28 @@ board initial_board = {
   }
 };
 
+board rook_test_board = {
+  .turn = white,
+  .placement = {
+    {  empty_space, empty_space, empty_space, empty_space, empty_space, empty_space, empty_space, empty_space
+    },
+    {  empty_space, empty_space, empty_space, empty_space, empty_space, empty_space, empty_space, empty_space
+    },
+    {  empty_space, empty_space, empty_space, empty_space, empty_space, empty_space, empty_space, empty_space
+    },
+    {  empty_space, empty_space, empty_space, empty_space, empty_space, empty_space, empty_space, empty_space
+    },
+    {  empty_space, white_rook, empty_space, empty_space, black_queen, empty_space, empty_space, empty_space
+    },
+    {  empty_space, empty_space, empty_space, empty_space, empty_space, empty_space, empty_space, empty_space
+    },
+    {  empty_space, white_pawn, empty_space, empty_space, empty_space, empty_space, empty_space, empty_space
+    },
+    {  empty_space, empty_space, empty_space, empty_space, empty_space, empty_space, empty_space, empty_space
+    },    
+  }
+};
+
 // pawn, on first move can advance forward one or two spaces
 // captures forward,diagonally by one space
 // en passant, enemy pawn moves two spaces forward, lands beside your pawn, you move diagonally and capture it
@@ -376,7 +398,10 @@ int main() {
   // print_piece_and_team(&initial_board.placement[0][0]);
   // print_piece_and_team(&initial_board.placement[0][6]);
   // print_piece_and_team(&initial_board.placement[6][0]);
+  
   can_move(&initial_board, 6, 0);
-  can_move(&initial_board, 1, 1);  
+  can_move(&initial_board, 1, 1);
+  can_move(&rook_test_board, 4, 1);
+  
   return 0;
 }

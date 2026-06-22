@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <wchar.h>
 
 // white
 // black
@@ -221,9 +222,9 @@ const char* piece_and_team_to_unicode(piece_and_team *pt) {
     case king:
       return "♚";
     case empty:
-      return " ";
+      return "\u00A0";
     default:
-      return "";
+      return "\u00A0";
     }
   }
     
@@ -242,13 +243,13 @@ const char* piece_and_team_to_unicode(piece_and_team *pt) {
     case king:
       return "♔";
     case empty:
-      return " ";
+      return "\u00A0";
     default:
-      return "";
+      return "\u00A0";
     }
   }
   default:
-    return "";
+    return "\u00A0";
   }
 }
 
@@ -256,13 +257,13 @@ void print_board(board* board) {
   int row;
   int col;
   for (row = 0; row < 8; row++) {
-    printf("%d", 8-row);
+    wprintf(L"%d", 8-row);
     for (col = 0; col < 8; col++) {
-      printf(" %s", piece_and_team_to_unicode(&board->placement[row][col]));
+      wprintf(L"\u00A0%s", piece_and_team_to_unicode(&board->placement[row][col]));
     }
-    printf("\n");
+    wprintf(L"\n");
   }
-  printf("  a b c d e f g h\n");  
+  wprintf(L"  a b c d e f g h\n");  
 }
 
 void print_moves(moves* moves) {
@@ -782,7 +783,8 @@ void game_loop() {
 
 
 int main() {
-  setlocale(LC_ALL, ""); // Essential for correct UTF-8 rendering  
+  // setlocale(LC_ALL, ""); // Essential for correct UTF-8 rendering
+  setlocale(LC_CTYPE, "");
   // print_piece_and_team(&initial_board.placement[0][0]);
   // print_piece_and_team(&initial_board.placement[0][6]);
   // print_piece_and_team(&initial_board.placement[6][0]);
